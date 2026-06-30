@@ -1,0 +1,17 @@
+﻿version: "3.8"
+
+services:
+  dbas:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dbas.toml:/app/dbas.toml:ro
+      - dbas-data:/app/dbas-data
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FEISHU_BOT_APP_SECRET=${FEISHU_BOT_APP_SECRET:-}
+    command: ["/app/dbas", "-config", "/app/dbas.toml"]
+
+volumes:
+  dbas-data:
