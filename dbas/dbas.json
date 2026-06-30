@@ -1,0 +1,37 @@
+﻿{
+  "name": "DBAS",
+  "version": "0.1.0-alpha",
+  "description": "The Kubernetes for AI Coding Agents - governance-first control plane with FSM lifecycle, dual-brain review, and independent verification",
+  "homepage": "https://github.com/esengine/DeepSeek-Reasonix/tree/main/dbas",
+  "language": "Go",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai-agent",
+    "governance",
+    "coding-agent",
+    "control-plane",
+    "fsm",
+    "multi-agent",
+    "verification",
+    "orchestration"
+  ],
+  "features": [
+    "dual-brain-governance",
+    "fsm-enforced-lifecycle",
+    "independent-verification",
+    "branch-based-execution",
+    "automatic-retry-escalation",
+    "hermes-extensibility",
+    "real-time-dashboard"
+  ],
+  "executor_backends": [
+    "reasonix-native",
+    "command",
+    "docker"
+  ],
+  "install": {
+    "go": "go install github.com/esengine/DeepSeek-Reasonix/dbas/cmd/dbas@latest",
+    "script": "curl -fsSL https://raw.githubusercontent.com/esengine/DeepSeek-Reasonix/main/dbas/install.sh | sh",
+    "docker": "docker build -t dbas:latest https://github.com/esengine/DeepSeek-Reasonix.git#main:dbas"
+  }
+}

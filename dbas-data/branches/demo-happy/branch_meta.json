@@ -1,0 +1,35 @@
+{
+  "branch_id": "demo-happy",
+  "hashing_chain": {
+    "root_hash": "demo-root-hash",
+    "branch_hash": "demo-branch-hash-happy"
+  },
+  "current_state": "ARCHIVE",
+  "executor_info": {
+    "model": "default-agent",
+    "allocated_tokens": 8192
+  },
+  "output_paths": {
+    "workspace_dir": "C:\\Users\\Zing\\Documents\\kimi\\workspace\\dbas-standalone\\dbas-data\\branches\\demo-happy\\workspace",
+    "log_file": "dbas-data\\branches\\demo-happy\\execution.log",
+    "result_report": "dbas-data\\branches\\demo-happy\\report.json"
+  },
+  "logs": [
+    "[2026-06-30T02:55:46Z] Branch created: demo-happy",
+    "[DEMO] Happy Path: task accepted, beginning workflow...",
+    "[STATE_CHANGE] PLAN -\u003e PLAN | drafting task plan",
+    "[DECIDER] target=EXECUTING, confidence=0.95",
+    "[REVIEWER] Approved=true, target=EXECUTING",
+    "[STATE_CHANGE] EXECUTING -\u003e EXECUTING | FSM after reviewer approval",
+    "[STATE_CHANGE] VERIFYING -\u003e VERIFYING | exec OK -\u003e VERIFYING",
+    "[VERIFIER_PASS] All checks passed",
+    "[STATE_CHANGE] PASS -\u003e PASS | All checks passed",
+    "[RESET] retries cleared after escalation",
+    "[STATE_CHANGE] ARCHIVE -\u003e ARCHIVE | Archived: All checks passed",
+    "[ARCHIVE] All checks passed",
+    "[DEMO] Happy Path complete"
+  ],
+  "retries": 0,
+  "created_at": "2026-06-30T02:55:46.3232681Z",
+  "updated_at": "2026-06-30T02:55:46.331046Z"
+}

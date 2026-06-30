@@ -1,0 +1,154 @@
+﻿# DBAS (Disciplined Branching Agent System) configuration.
+# DBAS is a governance-first control plane for AI coding agents.
+# It orchestrates executors (aider, mini-swe-agent, OpenCode, etc.)
+# with FSM-enforced lifecycle, dual-brain review, and independent verification.
+#
+# Quick start:
+#   1. Copy this file to dbas.toml
+#   2. Set your OpenAI API key: $env:OPENAI_API_KEY = "sk-..."
+#   3. Build: go build -o dbas.exe ./cmd/dbas
+#   4. Run:  .\dbas.exe -config .\dbas.toml
+#   5. Open: http://localhost:8080
+
+project_id = "my-dbas-project"
+root_dir = "./dbas-data"
+port = 8080
+kanban_poll_seconds = 5
+max_parallel = 4
+
+# =============================================================================
+# LLM Providers
+# =============================================================================
+# Each provider connects to an OpenAI-compatible endpoint.
+# Credentials go in environment variables, never in this file.
+#
+# DBAS uses three roles:
+#   decider  - Analyzes tasks and proposes execution plans
+#   reviewer - Cross-validates plans against governance rules
+#   executor - Executes the approved plan using available tools
+#
+# You can use the same model for all three roles (recommended to start),
+# or use different models for each role.
+
+[[providers]]
+name = "openai-decider"
+kind = "openai"
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+api_key_env = "OPENAI_API_KEY"
+role = "decider"
+context_window = 128000
+
+[[providers]]
+name = "openai-reviewer"
+kind = "openai"
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+api_key_env = "OPENAI_API_KEY"
+role = "reviewer"
+context_window = 128000
+
+[[providers]]
+name = "openai-executor"
+kind = "openai"
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+api_key_env = "OPENAI_API_KEY"
+role = "executor"
+context_window = 128000
+
+# Alternative: use DeepSeek for cheaper execution
+# [[providers]]
+# name = "deepseek-executor"
+# kind = "openai"
+# base_url = "https://api.deepseek.com/v1"
+# model = "deepseek-chat"
+# api_key_env = "DEEPSEEK_API_KEY"
+# role = "executor"
+# context_window = 1000000
+
+# Optional: separate auditor role for cross-validation
+# Uses a different model/provider than the reviewer.
+# [[providers]]
+# name = "openai-auditor"
+# kind = "openai"
+# base_url = "https://api.openai.com/v1"
+# model = "gpt-4o-mini"
+# api_key_env = "OPENAI_API_KEY"
+# role = "auditor"
+# context_window = 128000
+
+# Alternative: use local llama.cpp / ollama endpoint
+# [[providers]]
+# name = "local-decider"
+# kind = "openai"
+# base_url = "http://localhost:8000/v1"
+# model = "qwen3.6-35b"
+# role = "decider"
+# context_window = 32000
+
+# =============================================================================
+# Executor Backend
+# =============================================================================
+# DBAS is a control plane. It delegates actual code changes to mature backends.
+#
+# Options:
+#   "reasonix-native" (default) - Built-in agent with full tool access
+#   "command"                    - External agent (aider, mini-swe-agent, etc.)
+
+[executor]
+type = "reasonix-native"
+
+# Command executor example (mini-swe-agent):
+# [executor]
+# type = "command"
+# command = "mini"
+# args = ["--model", "openai/gpt-4o", "--workdir", "{workspace}", "--"]
+# workdir = "{workspace}"
+# stdin_format = "text"
+
+# Command executor example (aider):
+# [executor]
+# type = "command"
+# command = "aider"
+# args = ["--yes-always", "--message", "-"]
+# workdir = "{workspace}"
+
+# =============================================================================
+# Experience Slot (Governance Rules)
+# =============================================================================
+# Controls retry, escalation, and verification behavior.
+
+[experience_slot]
+escalation_threshold = 3
+force_verifier_for_states = ["EXECUTING"]
+
+[experience_slot.verifier]
+code_syntax = "ast-check"
+test_pass_rate = 100
+
+[experience_slot.workflows.bug_loop]
+from = "VERIFYING"
+on_fail = "EXECUTING"
+max_retries = 3
+
+# =============================================================================
+# Kanban / Dashboard
+# =============================================================================
+
+[kanban]
+enabled = true
+notifier = "console"
+
+[kanban.feishu]
+app_id = ""
+app_secret_env = "FEISHU_BOT_APP_SECRET"
+webhook_url = ""
+
+# =============================================================================
+# Logging
+# =============================================================================
+
+[logging]
+level = "info"
+format = "json"

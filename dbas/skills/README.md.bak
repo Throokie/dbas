@@ -1,0 +1,59 @@
+﻿# DBAS Skills Marketplace
+
+DBAS loads domain-specific skills from Markdown files at startup. Each skill is a Go-compiled set of instructions loaded into the agent's context.
+
+## Available Skills
+
+### frontend-react
+React/TypeScript frontend development with hooks, TypeScript interfaces, and Tailwind CSS best practices.
+
+### go-migration
+Database migration patterns for Go projects: up/down functions, backward compatibility, and testing.
+
+### security-audit
+Security audit checklist: secrets scanning, SQL injection, input validation, CVE review, and auth logic.
+
+### rust-security
+Rust unsafe code review: pointer safety, FFI correctness, Send/Sync traits, and concurrency patterns.
+
+### kubernetes-operator
+Kubernetes operator development: controller-runtime patterns, finalizers, webhooks, and envtest integration.
+
+### python-mlops
+MLOps pipeline development: experiment tracking, feature stores, data versioning, and model monitoring.
+
+### sql-performance
+SQL optimization: index analysis, query plan review, N+1 detection, and migration best practices.
+
+### docker-secure
+Docker security hardening: distroless images, non-root users, capability dropping, and CVE scanning.
+
+## Creating a Skill
+
+1. Create a `.skill.md` file in the `skills/` directory
+2. Add YAML front matter:
+   ```yaml
+   ---
+   name: my-skill
+   version: 1.0.0
+   description: My custom skill
+   ---
+   ```
+3. Write Markdown instructions below the front matter
+4. Restart DBAS — skills load automatically
+
+## Skill Format
+
+```markdown
+---
+name: my-skill
+version: 1.0.0
+description: Brief description of the skill
+---
+
+## Skill Instructions
+
+1. Step-by-step instructions...
+2. Use code blocks for examples
+3. Reference best practices and conventions
+```

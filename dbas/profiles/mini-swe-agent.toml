@@ -1,0 +1,12 @@
+# Executor profile: mini-swe-agent
+#
+# Paste this [executor] block into dbas.toml after installing mini-swe-agent.
+# DBAS supplies the branch workspace, task JSON, log, and report paths.
+
+[executor]
+type = "command"
+command = "mini"
+args = ["--model", "openai/deepseek-chat", "--workdir", "{workspace}", "--"]
+workdir = "{workspace}"
+stdin_format = "text"
+env = { DBAS_OUTPUT_REPORT = "{report}", DBAS_TASK_FILE = "{task_file}" }

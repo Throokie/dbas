@@ -1,0 +1,12 @@
+# Executor profile: aider
+#
+# Paste this [executor] block into dbas.toml after installing aider.
+# The branch workspace becomes aider's working directory.
+
+[executor]
+type = "command"
+command = "aider"
+args = ["--yes-always", "--message", "-"]
+workdir = "{workspace}"
+stdin_format = "text"
+env = { DBAS_OUTPUT_REPORT = "{report}", DBAS_TASK_FILE = "{task_file}" }

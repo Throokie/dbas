@@ -1,0 +1,45 @@
+{
+  "branch_id": "demo-retry",
+  "hashing_chain": {
+    "root_hash": "demo-root-hash",
+    "branch_hash": "demo-branch-hash-retry"
+  },
+  "current_state": "ARCHIVE",
+  "executor_info": {
+    "model": "default-agent",
+    "allocated_tokens": 8192
+  },
+  "output_paths": {
+    "workspace_dir": "C:\\Users\\Zing\\Documents\\kimi\\workspace\\reasonix\\dbas\\dbas-data\\branches\\demo-retry\\workspace",
+    "log_file": "dbas-data\\branches\\demo-retry\\execution.log",
+    "result_report": "dbas-data\\branches\\demo-retry\\report.json"
+  },
+  "logs": [
+    "[2026-06-30T02:36:04Z] Branch created: demo-retry",
+    "[DEMO] Retry Path: starting task with known complexity...",
+    "[STATE_CHANGE] PLAN -\u003e PLAN | drafting task plan",
+    "[DECIDER] target=EXECUTING, confidence=0.85",
+    "[REVIEWER] Approved=true, target=EXECUTING",
+    "[STATE_CHANGE] EXECUTING -\u003e EXECUTING | FSM after reviewer approval",
+    "[EXECUTOR_ERROR] simulated execution failure #1",
+    "[STATE_CHANGE] VERIFYING -\u003e VERIFYING | exec error -\u003e VERIFYING",
+    "[STATE_CHANGE] FAIL_RETREAT -\u003e FAIL_RETREAT | exec error -\u003e FAIL_RETREAT",
+    "[RETRY] attempt 1/3",
+    "[STATE_CHANGE] EXECUTING -\u003e EXECUTING | attempt 2",
+    "[EXECUTOR_ERROR] simulated execution failure #2",
+    "[STATE_CHANGE] VERIFYING -\u003e VERIFYING | exec error -\u003e VERIFYING",
+    "[STATE_CHANGE] FAIL_RETREAT -\u003e FAIL_RETREAT | exec error -\u003e FAIL_RETREAT",
+    "[RETRY] attempt 2/3",
+    "[STATE_CHANGE] EXECUTING -\u003e EXECUTING | attempt 3",
+    "[STATE_CHANGE] VERIFYING -\u003e VERIFYING | exec OK -\u003e VERIFYING",
+    "[VERIFIER_PASS] All checks passed",
+    "[STATE_CHANGE] PASS -\u003e PASS | All checks passed",
+    "[RESET] retries cleared after escalation",
+    "[STATE_CHANGE] ARCHIVE -\u003e ARCHIVE | Archived: All checks passed",
+    "[ARCHIVE] All checks passed",
+    "[DEMO] Retry Path complete after 3 attempts"
+  ],
+  "retries": 0,
+  "created_at": "2026-06-30T02:36:04.1035453Z",
+  "updated_at": "2026-06-30T02:36:04.1150092Z"
+}
