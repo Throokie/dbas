@@ -1,0 +1,84 @@
+﻿name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build (Linux amd64)
+        run: |
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dbas-linux-amd64 .
+          tar czf dbas-linux-amd64.tar.gz dbas-linux-amd64 dbas/docs/ dbas/skills/ dbas/scripts/ dbas/assets/ dbas.example.toml README.md
+
+      - name: Build (macOS amd64)
+        run: |
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dbas-darwin-amd64 .
+          tar czf dbas-darwin-amd64.tar.gz dbas-darwin-amd64 dbas/docs/ dbas/skills/ dbas/scripts/ dbas/assets/ dbas.example.toml README.md
+
+      - name: Build (macOS ARM64)
+        run: |
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dbas-darwin-arm64 .
+          tar czf dbas-darwin-arm64.tar.gz dbas-darwin-arm64 dbas/docs/ dbas/skills/ dbas/scripts/ dbas/assets/ dbas.example.toml README.md
+
+      - name: Build (Windows amd64)
+        run: |
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dbas-windows-amd64.exe .
+          zip -r dbas-windows-amd64.zip dbas-windows-amd64.exe dbas/docs/ dbas/skills/ dbas/scripts/ dbas/assets/ dbas.example.toml README.md
+
+      - name: Generate checksums
+        run: |
+          sha256sum dbas-*.tar.gz dbas-*.zip > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: DBAS ${{ github.ref_name }}
+          body: |
+            ## DBAS ${{ github.ref_name }}
+
+            See [CHANGELOG](https://github.com/Throokie/dbas/releases) for details.
+
+            ### Downloads
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Linux | amd64 | `dbas-linux-amd64.tar.gz` |
+            | macOS | Intel | `dbas-darwin-amd64.tar.gz` |
+            | macOS | Apple Silicon | `dbas-darwin-arm64.tar.gz` |
+            | Windows | amd64 | `dbas-windows-amd64.zip` |
+
+            ### Quick Start
+
+            ```bash
+            tar xzf dbas-linux-amd64.tar.gz
+            ./dbas --demo --port 8080
+            ```
+
+            ### Checksums
+
+            ```
+            ${{ hashFiles('checksums.txt') }}
+            ```
+          files: |
+            dbas-*.tar.gz
+            dbas-*.zip
+            checksums.txt
+          draft: true
+          prerelease: false

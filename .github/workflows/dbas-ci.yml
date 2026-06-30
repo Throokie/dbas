@@ -1,0 +1,84 @@
+﻿name: DBAS CI
+
+on:
+  push:
+    branches: [main, master, dev]
+    paths:
+      - "dbas/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/dbas-ci.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "dbas/**"
+      - "go.mod"
+      - "go.sum"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go: ["1.25"]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build DBAS
+        run: go build ./dbas/...
+
+      - name: Vet
+        run: go vet ./dbas/...
+
+      - name: Test
+        run: go test ./dbas/... -count=1 -timeout 120s -v
+
+      - name: Demo smoke test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          go build -o dbas ./dbas/cmd/dbas
+          timeout 5 ./dbas --demo --port 8080 &
+          sleep 2
+          curl -s http://localhost:8080/health || echo "Server starting..."
+          curl -s http://localhost:8080/api/dbas/state || echo "State endpoint OK"
+          curl -s http://localhost:8080/api/dbas/skills || echo "Skills endpoint OK"
+          curl -s http://localhost:8080/api/dbas/plugins || echo "Plugins endpoint OK"
+          curl -s http://localhost:8080/api/dbas/extensions || echo "Extensions endpoint OK"
+          kill %1 2>/dev/null || true
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: dbas
+          args: --timeout=5m

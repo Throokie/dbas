@@ -5,16 +5,15 @@ build/
 *.out
 coverage.out
 coverage.html
-
 # Runtime data
 dbas-data/
-
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
 # OS
 .DS_Store
 Thumbs.db
+$null`$
+$null

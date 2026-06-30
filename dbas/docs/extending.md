@@ -1,4 +1,4 @@
-# Extending DBAS — Hermes-Style Extensibility
+﻿# Extending DBAS 鈥?Hermes-Style Extensibility
 
 > DBAS is built for extensibility. Like Hermes, it provides multiple extension mechanisms
 > ranging from drop-in Markdown files to full Go plugin interfaces. This guide covers all of them.
@@ -8,11 +8,12 @@
 ## Table of Contents
 
 1. [Overview: Five Extension Points](#1-overview-five-extension-points)
-2. [Skills (Easiest — No Code)](#2-skills)
+2. [Skills (Easiest 鈥?No Code)](#2-skills)
 3. [Executor Profiles](#3-executor-profiles)
 4. [Go Extensions (Plugin Interface)](#4-go-extensions)
 5. [MCP Plugins](#5-mcp-plugins)
 6. [Custom Provider Backends](#6-custom-provider-backends)
+7. [Feishu Bot Integration](#7-feishu-bot-integration)
 7. [API Reference](#7-api-reference)
 8. [Best Practices](#8-best-practices)
 
@@ -22,18 +23,18 @@
 
 | # | Mechanism | Effort | What You Get | Discovery |
 |---|-----------|--------|-------------|-----------|
-| 1 | **Skills** | 🐣 5 min | Domain-specific Markdown instructions, loaded at runtime | Filesystem |
-| 2 | **Executor Profiles** | 🐣 5 min | Pre-built config for aider, mini-swe-agent, opencode | Config file |
-| 3 | **Go Extensions** | 🔧 30 min | Register executors, verifiers, notifiers via Go interface | HTTP API |
-| 4 | **MCP Plugins** | 🐥 15 min | External tool servers via JSON-RPC over stdio | Config file |
-| 5 | **Custom Providers** | 🔧 1 hour | Any OpenAI-compatible LLM backend | Config file |
+| 1 | **Skills** | 馃悾 5 min | Domain-specific Markdown instructions, loaded at runtime | Filesystem |
+| 2 | **Executor Profiles** | 馃悾 5 min | Pre-built config for aider, mini-swe-agent, opencode | Config file |
+| 3 | **Go Extensions** | 馃敡 30 min | Register executors, verifiers, notifiers via Go interface | HTTP API |
+| 4 | **MCP Plugins** | 馃惀 15 min | External tool servers via JSON-RPC over stdio | Config file |
+| 5 | **Custom Providers** | 馃敡 1 hour | Any OpenAI-compatible LLM backend | Config file |
 
 Pick the mechanism that matches your goal:
-- **Want to add domain knowledge?** → Write a Skill
-- **Want to use a coding agent as backend?** → Add an Executor Profile
-- **Want to add new verification checks?** → Write a Go Extension
-- **Want to integrate external tools?** → Add an MCP Plugin
-- **Want to use a custom LLM?** → Add a Provider Backend
+- **Want to add domain knowledge?** 鈫?Write a Skill
+- **Want to use a coding agent as backend?** 鈫?Add an Executor Profile
+- **Want to add new verification checks?** 鈫?Write a Go Extension
+- **Want to integrate external tools?** 鈫?Add an MCP Plugin
+- **Want to use a custom LLM?** 鈫?Add a Provider Backend
 
 ---
 
@@ -304,6 +305,41 @@ GET /api/dbas/extensions
 
 ---
 
+
+## 7. Feishu Bot Integration
+
+DBAS includes a built-in bidirectional Feishu bot for chatting with your governance system from Feishu (椋炰功).
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| spawn <task> | Create a new branch |
+| status / stats | View DBAS status |
+| skills | List loaded skills |
+| ranches / list | List branches |
+| help / ? | Show help |
+
+### Configuration
+
+See [feishu-integration.md](feishu-integration.md).
+
+### Quick Setup
+
+```toml
+[feishu_bot]
+enabled = true
+app_id = "cli_xxx"
+app_secret_env = "FEISHU_BOT_APP_SECRET"
+```
+
+Then: ```bash
+export FEISHU_BOT_APP_SECRET="your_secret"
+./dbas -config dbas.toml
+```
+
+---
+
 ## 8. Best Practices
 
 ### Skill Design
@@ -328,3 +364,4 @@ GET /api/dbas/extensions
 - Use Executor Profiles to integrate existing tools
 - Document custom extensions with skill files
 - Share extensions via the community
+

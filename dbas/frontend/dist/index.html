@@ -3,300 +3,564 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DBAS Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.475.0/dist/umd/lucide.min.js"></script>
+<title>DBAS Dashboard — Governed Agent Orchestration</title>
 <style>
 :root {
-  --bg-950: #0a0e1a;
-  --bg-900: #0f1525;
-  --bg-800: #1a2235;
-  --bg-700: #24304f;
-  --bg-600: #2d3d5e;
-  --text-100: #eef2f8;
-  --text-200: #cdd5e3;
-  --text-400: #8896b0;
-  --text-500: #5c6a85;
-  --accent: #38bdf8;
-  --accent-glow: rgba(56, 189, 248, 0.12);
-  --green: #22c55e;
-  --green-dim: rgba(34, 197, 94, 0.12);
-  --red: #ef4444;
-  --red-dim: rgba(239, 68, 68, 0.12);
-  --yellow: #eab308;
-  --yellow-dim: rgba(234, 179, 8, 0.12);
-  --orange: #f97316;
-  --orange-dim: rgba(249, 115, 22, 0.12);
-  --blue: #3b82f6;
-  --radius: 10px;
-  --radius-sm: 6px;
+  --bg-950: #0a0e1a; --bg-900: #0f1525; --bg-850: #131b2e; --bg-800: #1a2235;
+  --bg-750: #1e2840; --bg-700: #24304f; --bg-600: #2d3d5e;
+  --text-100: #eef2f8; --text-200: #cdd5e3; --text-400: #8896b0; --text-500: #5c6a85;
+  --accent: #38bdf8; --accent-dim: rgba(56,189,248,0.08);
+  --green: #22c55e; --green-dim: rgba(34,197,94,0.12);
+  --red: #ef4444; --red-dim: rgba(239,68,68,0.12);
+  --yellow: #eab308; --yellow-dim: rgba(234,179,8,0.12);
+  --orange: #f97316; --orange-dim: rgba(249,115,22,0.12);
+  --blue: #3b82f6; --blue-dim: rgba(59,130,246,0.12);
+  --purple: #a855f7; --purple-dim: rgba(168,85,247,0.12);
+  --radius: 10px; --radius-sm: 6px;
 }
-.state-INIT { --state-color: var(--text-500); --state-bg: rgba(92,106,133,0.12); }
-.state-PLAN { --state-color: var(--accent); --state-bg: rgba(56,189,248,0.06); }
-.state-EXECUTING { --state-color: var(--blue); --state-bg: rgba(59,130,246,0.12); }
-.state-VERIFYING { --state-color: var(--yellow); --state-bg: rgba(234,179,8,0.12); }
-.state-PASS { --state-color: var(--green); --state-bg: rgba(34,197,94,0.12); }
-.state-FAIL_RETREAT { --state-color: var(--orange); --state-bg: rgba(249,115,22,0.12); }
-.state-ARCHIVE { --state-color: var(--text-400); --state-bg: rgba(136,150,176,0.08); }
-.state-ERROR { --state-color: var(--red); --state-bg: rgba(239,68,68,0.12); }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; background: var(--bg-950); color: var(--text-200); min-height: 100vh; overflow-x: hidden; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bg-600); border-radius: 3px; }
-.header { background: var(--bg-900); border-bottom: 1px solid var(--bg-700); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-.logo { display: flex; align-items: center; gap: 10px; }
-.logo-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--blue)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 15px; }
-.logo-text { font-size: 17px; font-weight: 600; color: var(--text-100); letter-spacing: -0.02em; }
-.logo-badge { font-size: 10px; background: var(--bg-700); color: var(--text-400); padding: 2px 8px; border-radius: 4px; font-weight: 500; text-transform: uppercase; }
-.header-right { display: flex; align-items: center; gap: 16px; }
-.conn-status { display: flex; align-items: center; gap: 6px; }
-.connection-dot { width: 8px; height: 8px; border-radius: 50%; transition: all 0.3s; }
-.connection-dot.ok { background: var(--green); box-shadow: 0 0 10px var(--green-dim); animation: pulse 2s infinite; }
-.connection-dot.error { background: var(--red); box-shadow: 0 0 10px var(--red-dim); }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.connection-label { font-size: 12px; color: var(--text-500); }
-.main { max-width: 1440px; margin: 0 auto; padding: 24px; }
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--bg-800); border: 1px solid var(--bg-700); border-radius: var(--radius); padding: 16px 20px; }
-.stat-card:hover { border-color: var(--bg-600); }
-.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-500); margin-bottom: 2px; }
-.stat-value { font-size: 28px; font-weight: 700; color: var(--text-100); letter-spacing: -0.03em; line-height: 1.2; }
-.stat-sub { font-size: 12px; color: var(--text-400); margin-top: 2px; }
-.fsm-section { background: var(--bg-800); border: 1px solid var(--bg-700); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
-.fsm-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--bg-700); }
-.fsm-title { font-size: 12px; font-weight: 600; color: var(--text-400); text-transform: uppercase; letter-spacing: 0.05em; }
-.fsm-body { padding: 20px; }
-.fsm-flow { display: flex; align-items: stretch; gap: 4px; }
-.fsm-node { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 6px; border-radius: var(--radius-sm); background: var(--bg-750); border: 1px solid var(--bg-600); transition: all 0.3s ease; min-height: 70px; }
-.fsm-node.empty-state { opacity: 0.3; }
-.fsm-node-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-500); margin-bottom: 4px; white-space: nowrap; }
-.fsm-node-bar { height: 4px; width: 0%; border-radius: 2px; margin: 4px 0; transition: width 0.8s ease; }
-.fsm-node-bar.active { width: 100%; }
-.fsm-node-count { font-size: 13px; font-weight: 700; color: var(--text-200); }
-.fsm-node-arrow { color: var(--text-500); font-size: 14px; display: flex; align-items: center; padding: 0 2px; }
-.branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; }
-.branch-card { background: var(--bg-800); border: 1px solid var(--bg-700); border-radius: var(--radius); padding: 16px; }
-.branch-card:hover { border-color: var(--bg-600); }
-.branch-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.branch-name { font-size: 13px; font-weight: 600; color: var(--text-100); word-break: break-all; }
-.branch-id { font-size: 10px; color: var(--text-500); margin-top: 2px; }
-.branch-state { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--state-bg); color: var(--state-color); border: 1px solid color-mix(in srgb, var(--state-color) 20%, transparent); white-space: nowrap; }
-.branch-meta { display: flex; gap: 16px; margin-bottom: 8px; font-size: 11px; color: var(--text-500); }
-.log-viewer { background: var(--bg-900); border: 1px solid var(--bg-700); border-radius: var(--radius-sm); padding: 8px; max-height: 120px; overflow-y: auto; font-family: "SF Mono", "Cascadia Code", monospace; font-size: 10px; line-height: 1.6; }
-.log-line { color: var(--text-400); }
-.log-line.error { color: var(--red); }
-.log-line.pass { color: var(--green); }
-.log-line.warn { color: var(--yellow); }
-.log-line.escalate { color: var(--orange); }
-.log-line.info { color: var(--accent); }
-.branch-actions { margin-top: 10px; display: flex; gap: 6px; }
-.empty-state-card { grid-column: 1 / -1; text-align: center; padding: 48px 24px; background: var(--bg-800); border: 1px dashed var(--bg-600); border-radius: var(--radius); color: var(--text-500); font-size: 14px; }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.section-title { font-size: 12px; font-weight: 600; color: var(--text-400); text-transform: uppercase; letter-spacing: 0.05em; }
-.tabs { display: flex; gap: 2px; margin-bottom: 12px; }
-.tab { padding: 6px 14px; font-size: 11px; font-weight: 600; background: transparent; border: none; color: var(--text-500); cursor: pointer; border-radius: var(--radius-sm); transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.03em; }
-.tab:hover { color: var(--text-200); background: var(--bg-750); }
-.tab.active { color: var(--accent); background: rgba(56,189,248,0.06); }
-.tab-content { display: none; }
-.tab-content.active { display: block; }
-.spawn-panel { background: var(--bg-800); border: 1px solid var(--bg-700); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
-.spawn-panel h3 { font-size: 12px; font-weight: 600; color: var(--text-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
-.spawn-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.spawn-row input, .spawn-row textarea { flex: 1; padding: 8px 12px; font-size: 12px; background: var(--bg-900); border: 1px solid var(--bg-700); border-radius: var(--radius-sm); color: var(--text-200); font-family: inherit; outline: none; }
-.spawn-row input:focus, .spawn-row textarea:focus { border-color: var(--accent); }
-.spawn-row textarea { resize: vertical; min-height: 60px; }
-.btn { padding: 6px 14px; font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); border: 1px solid var(--bg-600); background: var(--bg-750); color: var(--text-200); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
-.btn:hover { background: var(--bg-600); }
-.btn-primary { background: var(--accent); color: var(--bg-950); border-color: var(--accent); font-weight: 700; }
-.btn-success { background: var(--green); color: var(--bg-950); border-color: var(--green); font-weight: 700; }
-.btn-sm { padding: 4px 10px; font-size: 10px; }
-.tree-view { background: var(--bg-900); border: 1px solid var(--bg-700); border-radius: var(--radius-sm); padding: 12px; overflow-x: auto; font-family: "SF Mono", monospace; font-size: 11px; line-height: 1.8; min-height: 80px; color: var(--text-400); white-space: pre; }
-@media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .branch-grid { grid-template-columns: 1fr; } .spawn-row { flex-direction: column; } .main { padding: 16px; } }
-.skill-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--bg-700); font-size:13px; }
-.skill-item:last-child { border-bottom:none; }
-.skill-name { font-weight:600; color:var(--accent); min-width:80px; }
-.skill-desc { color:var(--text-400); font-size:12px; }
-.plugin-item { padding:4px 0; font-size:13px; color:var(--text-200); font-family:monospace; }
-.plugin-section-label { font-size:11px; text-transform:uppercase; color:var(--text-500); letter-spacing:0.05em; margin-bottom:4px; }
-.empty-text { color:var(--text-500); font-size:13px; padding:8px 0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg-950); color:var(--text-200); min-height:100vh; overflow-x:hidden;
+}
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg-600); border-radius:3px; }
+
+/* Header */
+.header { background:var(--bg-900); border-bottom:1px solid var(--bg-700); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-icon { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--accent),var(--blue)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:14px; }
+.logo-text { font-size:16px; font-weight:600; color:var(--text-100); }
+.logo-badge { font-size:9px; background:var(--bg-700); color:var(--text-400); padding:2px 7px; border-radius:4px; font-weight:600; text-transform:uppercase; }
+.header-right { display:flex; align-items:center; gap:14px; }
+.conn-status { display:flex; align-items:center; gap:6px; font-size:12px; }
+.conn-dot { width:7px; height:7px; border-radius:50%; transition:all 0.3s; }
+.conn-dot.ok { background:var(--green); box-shadow:0 0 8px var(--green-dim); }
+.conn-dot.err { background:var(--red); box-shadow:0 0 8px var(--red-dim); }
+.header-btn {
+  background:var(--bg-800); border:1px solid var(--bg-700); color:var(--text-200); padding:6px 14px;
+  border-radius:var(--radius-sm); font-size:12px; cursor:pointer; transition:all 0.15s;
+}
+.header-btn:hover { background:var(--bg-700); border-color:var(--accent); color:var(--accent); }
+
+/* Layout */
+.main { max-width:1440px; margin:0 auto; padding:20px; }
+
+/* Stats bar */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
+.stat-card { background:var(--bg-800); border:1px solid var(--bg-700); border-radius:var(--radius); padding:14px 16px; transition:border-color 0.2s; }
+.stat-card:hover { border-color:var(--bg-600); }
+.stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-500); margin-bottom:1px; }
+.stat-value { font-size:24px; font-weight:700; color:var(--text-100); letter-spacing:-0.03em; line-height:1.2; }
+.stat-sub { font-size:11px; color:var(--text-400); margin-top:1px; }
+
+/* Panels */
+.panel { background:var(--bg-800); border:1px solid var(--bg-700); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
+.panel-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--bg-700); }
+.panel-title { font-size:11px; font-weight:600; color:var(--text-400); text-transform:uppercase; letter-spacing:0.05em; display:flex; align-items:center; gap:8px; }
+.panel-body { padding:16px 18px; }
+
+/* FSM Flow */
+.fsm-flow { display:flex; align-items:stretch; gap:4px; }
+.fsm-node { flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 4px; border-radius:var(--radius-sm); background:var(--bg-750); border:1px solid var(--bg-600); transition:all 0.4s; min-height:62px; position:relative; cursor:default; }
+.fsm-node.active { border-color:var(--sc); box-shadow:0 0 16px var(--sb); background:color-mix(in srgb, var(--sb) 50%, var(--bg-750)); }
+.fsm-node-label { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-500); margin-bottom:3px; white-space:nowrap; }
+.fsm-node-bar { height:3px; width:0%; border-radius:2px; margin:3px 0; transition:width 0.6s ease; background:var(--sc); }
+.fsm-node-bar.partial { width:var(--pct); }
+.fsm-node-bar.full { width:100%; }
+.fsm-node-count { font-size:14px; font-weight:700; color:var(--text-200); transition:all 0.3s; }
+.fsm-node:hover .fsm-node-count { color:var(--sc); }
+.fsm-arrow { color:var(--bg-600); font-size:12px; display:flex; align-items:center; padding:0 1px; }
+
+/* Branch Cards Grid */
+.branch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px; }
+.branch-card {
+  background:var(--bg-850); border:1px solid var(--bg-700); border-radius:var(--radius);
+  padding:14px; transition:all 0.2s; cursor:default;
+}
+.branch-card:hover { border-color:var(--sc,var(--bg-600)); transform:translateY(-1px); }
+.branch-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.branch-name { font-size:13px; font-weight:600; color:var(--text-100); }
+.branch-id { font-size:10px; color:var(--text-500); font-family:monospace; margin-top:2px; }
+.branch-state {
+  font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px; letter-spacing:0.03em;
+  white-space:nowrap; flex-shrink:0;
+}
+.branch-info { display:flex; gap:12px; font-size:10px; color:var(--text-500); margin-bottom:8px; flex-wrap:wrap; }
+.branch-logs { font-size:10px; color:var(--text-500); line-height:1.6; padding:8px; background:var(--bg-900); border-radius:4px; font-family:monospace; max-height:60px; overflow-y:auto; white-space:pre-wrap; }
+
+/* Branch Tree (SVG-based) */
+.tree-container { min-height:200px; position:relative; }
+.tree-container svg { width:100%; height:auto; min-height:200px; }
+.tree-node-bg { fill:var(--bg-750); stroke:var(--bg-600); stroke-width:1.5; rx:6; ry:6; }
+.tree-node-bg:hover { stroke:var(--accent); }
+.tree-node-label { font-size:10px; fill:var(--text-200); }
+.tree-node-state { font-size:8px; fill:var(--text-500); }
+.tree-edge { stroke:var(--bg-600); stroke-width:1.5; fill:none; }
+.tree-empty { display:flex; align-items:center; justify-content:center; min-height:150px; color:var(--text-500); font-size:12px; }
+
+/* Skills */
+.skill-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; }
+.skill-item {
+  background:var(--bg-850); border:1px solid var(--bg-700); border-radius:var(--radius-sm);
+  padding:10px 12px; transition:all 0.15s;
+}
+.skill-item:hover { border-color:var(--bg-600); }
+.skill-name { font-size:11px; font-weight:600; color:var(--text-100); display:block; }
+.skill-badge { font-size:9px; color:var(--text-500); display:inline-block; margin:2px 0; }
+.skill-desc { font-size:9px; color:var(--text-400); display:block; margin-top:2px; line-height:1.4; }
+
+/* Plugin chips */
+.plugin-area { display:flex; flex-wrap:wrap; gap:6px; }
+.plugin-chip {
+  font-size:10px; padding:4px 10px; border-radius:4px; font-weight:600; letter-spacing:0.02em;
+}
+.plugin-chip-exec { background:var(--accent-dim); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 20%, transparent); }
+.plugin-chip-verifier { background:var(--green-dim); color:var(--green); border:1px solid color-mix(in srgb, var(--green) 20%, transparent); }
+.plugin-chip-notif { background:var(--purple-dim); color:var(--purple); border:1px solid color-mix(in srgb, var(--purple) 20%, transparent); }
+
+/* Spawn controls */
+.controls { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+.controls input {
+  background:var(--bg-900); border:1px solid var(--bg-700); color:var(--text-200);
+  padding:8px 12px; border-radius:var(--radius-sm); font-size:12px; transition:border-color 0.15s;
+  min-width:150px;
+}
+.controls input:focus { outline:none; border-color:var(--accent); }
+.controls input::placeholder { color:var(--text-500); }
+.btn {
+  padding:8px 16px; border-radius:var(--radius-sm); font-size:12px; font-weight:600;
+  border:none; cursor:pointer; transition:all 0.15s;
+}
+.btn-primary { background:linear-gradient(135deg,var(--accent),var(--blue)); color:#fff; }
+.btn-primary:hover { box-shadow:0 0 16px var(--accent-dim); transform:translateY(-1px); }
+.btn-secondary { background:var(--bg-700); color:var(--text-200); border:1px solid var(--bg-600); }
+.btn-secondary:hover { background:var(--bg-600); border-color:var(--accent); }
+.btn-secondary:hover { background:var(--bg-600); }
+
+/* Activity feed */
+.activity-feed { max-height:300px; overflow-y:auto; }
+.activity-item {
+  display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--bg-750);
+  font-size:11px; align-items:flex-start;
+}
+.activity-item:last-child { border-bottom:none; }
+.activity-time { color:var(--text-500); font-family:monospace; font-size:10px; white-space:nowrap; min-width:60px; }
+.activity-msg { color:var(--text-200); line-height:1.4; }
+.activity-state { font-size:9px; padding:2px 6px; border-radius:3px; font-weight:600; white-space:nowrap; }
+
+/* Empty state */
+.empty-text { color:var(--text-500); font-size:12px; text-align:center; padding:24px 0; }
+
+/* Tab system */
+.tabs { display:flex; gap:2px; background:var(--bg-900); border-radius:var(--radius-sm); padding:3px; margin-bottom:14px; }
+.tab {
+  padding:6px 14px; border-radius:4px; font-size:10px; font-weight:600; color:var(--text-500);
+  cursor:pointer; transition:all 0.15s; border:none; background:none;
+}
+.tab.active { background:var(--bg-700); color:var(--text-200); }
+.tab:hover:not(.active) { color:var(--text-400); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* Responsive */
+@media (max-width:768px) {
+  .stats { grid-template-columns:repeat(3,1fr); }
+  .branch-grid { grid-template-columns:1fr; }
+  .fsm-flow { flex-wrap:wrap; }
+  .fsm-node { min-width:60px; }
+  .header { padding:0 12px; }
+  .main { padding:12px; }
+}
+@media (max-width:480px) {
+  .stats { grid-template-columns:repeat(2,1fr); }
+}
 </style>
 </head>
 <body>
+
 <div class="header">
-  <div class="logo"><div class="logo-icon">DB</div><span class="logo-text">DBAS</span><span class="logo-badge">v0.1.0-alpha</span></div>
-  <div class="header-right"><div class="conn-status"><span class="connection-dot" id="connDot"></span><span class="connection-label" id="connLabel">connecting...</span></div></div>
+  <div class="logo">
+    <div class="logo-icon">D</div>
+    <span class="logo-text">DBAS</span>
+    <span class="logo-badge">v0.1.0</span>
+  </div>
+  <div class="header-right">
+    <span class="conn-status">
+      <span class="conn-dot err" id="connDot"></span>
+      <span id="connText">connecting...</span>
+    </span>
+  </div>
 </div>
+
 <div class="main">
+
+  <!-- Stats -->
   <div class="stats">
-    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">branches</div></div>
-    <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" id="statActive" style="color:var(--accent)">0</div><div class="stat-sub">in progress</div></div>
-    <div class="stat-card"><div class="stat-label">Passed</div><div class="stat-value" id="statPassed" style="color:var(--green)">0</div><div class="stat-sub">archived</div></div>
-    <div class="stat-card"><div class="stat-label">Failed</div><div class="stat-value" id="statFailed" style="color:var(--red)">0</div><div class="stat-sub">errors</div></div>
+    <div class="stat-card"><div class="stat-label">Total Branches</div><div class="stat-value" id="statBranches">-</div><div class="stat-sub" id="statBranchesSub">active / completed</div></div>
+    <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" id="statActive" style="color:var(--accent)">-</div><div class="stat-sub">in progress</div></div>
+    <div class="stat-card"><div class="stat-label">Passed</div><div class="stat-value" id="statPassed" style="color:var(--green)">-</div><div class="stat-sub">verification passed</div></div>
+    <div class="stat-card"><div class="stat-label">Failed</div><div class="stat-value" id="statFailed" style="color:var(--red)">-</div><div class="stat-sub">verification failed</div></div>
+    <div class="stat-card"><div class="stat-label">Skills</div><div class="stat-value" id="statSkills">-</div><div class="stat-sub" id="skillsCount">loaded</div></div>
+    <div class="stat-card"><div class="stat-label">Extensions</div><div class="stat-value" id="statExts">-</div><div class="stat-sub" id="extCount">registered</div></div>
   </div>
-  <div class="fsm-section">
-    <div class="fsm-header"><span class="fsm-title">FSM Lifecycle Flow</span></div>
-    <div class="fsm-body"><div class="fsm-flow" id="fsmFlow"></div></div>
-  </div>
-  <div class="spawn-panel">
-    <h3>Spawn Branch</h3>
-    <div class="spawn-row"><input type="text" id="taskName" placeholder="Task name (required)"></div>
-    <div class="spawn-row"><textarea id="taskInput" placeholder="Task description (optional)"></textarea></div>
-    <div class="spawn-row" style="gap:8px">
-      <button class="btn btn-primary" onclick="spawnBranch()">Execute</button>
-      <button class="btn btn-success" onclick="spawnDemo()">Demo</button>
-      <button class="btn" onclick="refreshNow()">Refresh</button>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="panel-header"><div class="panel-title">Spawn Branch</div></div>
+    <div class="panel-body">
+      <div class="controls">
+        <input type="text" id="taskName" placeholder="Task name (e.g., fix-login-css)" value="demo-task">
+        <input type="text" id="taskInput" placeholder="Task description (optional)">
+        <button class="btn btn-primary" onclick="spawnBranch()">Spawn</button>
+        <button class="btn btn-secondary" onclick="spawnDemo()">Quick Demo</button>
+      </div>
     </div>
   </div>
-  <div class="section-header"><span class="section-title">Branches</span></div>
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('list', this)">Grid</button>
-    <button class="tab" onclick="switchTab('tree', this)">Tree</button>
-  </div>
-  <div id="tabList" class="tab-content active"><div class="branch-grid" id="branchList"></div></div>
-  <div id="tabTree" class="tab-content"><div class="tree-view" id="treeView">(no branches)</div></div>
-</div>
-<script>
-const API = "";
-let state = { branches: [], experience_slot: {} };
-let pollTimer = null;
-const FSM_STATES = ["INIT","PLAN","EXECUTING","VERIFYING","PASS","FAIL_RETREAT","ARCHIVE","ERROR"];
 
-async function fetchState() {
-  fetchSkills();
-  fetchPlugins();
+  <!-- Tabs: Branches | Tree | FSM | Skills | Extensions -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">Overview</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:10px;color:var(--text-500)">auto-refresh every 2s</span>
+        <button class="header-btn" onclick="refreshNow()">Refresh Now</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="tabs">
+        <button class="tab active" data-tab="branches">Branches</button>
+        <button class="tab" data-tab="tree">Branch Tree</button>
+        <button class="tab" data-tab="fsm">FSM Flow</button>
+        <button class="tab" data-tab="skills">Skills</button>
+        <button class="tab" data-tab="extensions">Extensions</button>
+        <button class="tab" data-tab="activity">Activity</button>
+      </div>
+
+      <!-- Branches Tab -->
+      <div class="tab-content active" id="tab-branches">
+        <div class="branch-grid" id="branchGrid"></div>
+      </div>
+
+      <!-- Tree Tab -->
+      <div class="tab-content" id="tab-tree">
+        <div class="tree-container" id="treeContainer"><div class="tree-empty">Loading...</div></div>
+      </div>
+
+      <!-- FSM Tab -->
+      <div class="tab-content" id="tab-fsm">
+        <div class="fsm-flow" id="fsmFlow"></div>
+      </div>
+
+      <!-- Skills Tab -->
+      <div class="tab-content" id="tab-skills">
+        <div class="skill-list" id="skillsList"></div>
+      </div>
+
+      <!-- Extensions Tab -->
+      <div class="tab-content" id="tab-extensions">
+        <div style="margin-bottom:12px">
+          <div class="panel-title" style="text-transform:none;font-size:12px;margin-bottom:6px;color:var(--text-400)">Extensions</div>
+          <div class="skill-list" id="extMetaList"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div><div class="panel-title" style="text-transform:none;font-size:11px;margin-bottom:6px;color:var(--text-500)">Executors</div><div class="plugin-area" id="executorsList"></div></div>
+          <div><div class="panel-title" style="text-transform:none;font-size:11px;margin-bottom:6px;color:var(--text-500)">Verifiers</div><div class="plugin-area" id="verifiersList"></div></div>
+          <div><div class="panel-title" style="text-transform:none;font-size:11px;margin-bottom:6px;color:var(--text-500)">Notifiers</div><div class="plugin-area" id="notifiersList"></div></div>
+        </div>
+      </div>
+
+      <!-- Activity Tab -->
+      <div class="tab-content" id="tab-activity">
+        <div class="activity-feed" id="activityFeed"><div class="empty-text">No activity yet. Spawn a branch to see events.</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var API = window.location.origin;
+var POLL_INTERVAL = 2000;
+var prevBranches = [];
+
+function $(id) { return document.getElementById(id); }
+
+// Tab system
+document.querySelectorAll(".tab").forEach(function(t) {
+  t.addEventListener("click", function() {
+    document.querySelectorAll(".tab").forEach(function(x) { x.classList.remove("active"); });
+    document.querySelectorAll(".tab-content").forEach(function(x) { x.classList.remove("active"); });
+    t.classList.add("active");
+    var tabId = t.getAttribute("data-tab");
+    var el = document.getElementById("tab-" + tabId);
+    if (el) el.classList.add("active");
+    // If switching to tree tab, re-render
+    if (tabId === "tree") renderTree();
+  });
+});
+
+function setConn(ok, msg) {
+  var dot = $("connDot"), txt = $("connText");
+  dot.className = "conn-dot " + (ok ? "ok" : "err");
+  txt.textContent = msg;
+}
+
+async function refreshNow() {
   try {
-    const res = await fetch(API + "/api/dbas/state");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    state = await res.json();
-    document.getElementById("connDot").className = "connection-dot ok";
-    document.getElementById("connLabel").textContent = "connected";
-    render();
-  } catch (e) {
-    document.getElementById("connDot").className = "connection-dot error";
-    document.getElementById("connLabel").textContent = "disconnected";
+    var r = await fetch(API + "/api/dbas/state");
+    if (!r.ok) throw new Error(r.status);
+    var data = await r.json();
+    setConn(true, "connected");
+    renderState(data);
+  } catch(e) {
+    setConn(false, "disconnected");
   }
 }
 
-function renderFSMFlow(branches) {
-  const el = document.getElementById("fsmFlow");
-  const counts = {};
-  for (const s of FSM_STATES) counts[s] = 0;
-  for (const b of branches) { const s = b.current_state || "INIT"; counts[s] = (counts[s] || 0) + 1; }
-  let flowColors = {INIT:"var(--text-500)",PLAN:"var(--accent)",EXECUTING:"var(--blue)",VERIFYING:"var(--yellow)",PASS:"var(--green)",FAIL_RETREAT:"var(--orange)",ARCHIVE:"var(--text-400)",ERROR:"var(--red)"};
-  el.innerHTML = FSM_STATES.map((s, i) => {
-    const c = counts[s] || 0;
-    const active = c > 0;
-    const color = flowColors[s] || "var(--text-500)";
-    const arrow = i < FSM_STATES.length - 1 ? "<span class="fsm-node-arrow">\u2192</span>" : "";
-    return "<div style="display:flex;align-items:center;gap:0;flex:1"><div class="fsm-node " + (active ? "" : "empty-state") + ""><div class="fsm-node-label">" + s + "</div><div class="fsm-node-bar " + (active ? "active" : "") + "" style="background:" + color + ""></div><div class="fsm-node-count" style="color:" + color + "">" + c + "</div></div>" + arrow + "</div>";
+function renderState(data) {
+  var branches = data.branches || data.experiences || [];
+
+  // Detect new branches for activity
+  var newBrs = branches.filter(function(b) {
+    var bid = b.BranchID || b.branch_id || "";
+    return bid && prevBranches.indexOf(bid) === -1;
+  });
+  newBrs.forEach(function(b) {
+    addActivity("spawn", b.BranchID || b.branch_id, "New branch created: " + (b.Name || b.name || b.BranchID || b.branch_id));
+  });
+  prevBranches = branches.map(function(b) { return b.BranchID || b.branch_id || ""; });
+
+  // Stats
+  var total = branches.length;
+  var active = 0, passed = 0, failed = 0;
+  branches.forEach(function(b) {
+    var s = b.CurrentState || b.current_state || "";
+    if (s === "PASS" || s === "ARCHIVE") passed++;
+    else if (s === "FAIL" || s === "FAIL_RETREAT" || s === "ERROR") failed++;
+    else active++;
+  });
+  $("statBranches").textContent = total;
+  $("statBranchesSub").textContent = active + " active · " + passed + " completed";
+  $("statActive").textContent = active;
+  $("statPassed").textContent = passed;
+  $("statFailed").textContent = failed;
+
+  // FSM Flow
+  renderFSM(branches);
+
+  // Branch cards
+  renderBranches(branches);
+
+  // If tree tab is active, re-render
+  var treeTab = document.querySelector(".tab[data-tab='tree']");
+  if (treeTab && treeTab.classList.contains("active")) renderTree();
+
+  // Activity: state changes
+  branches.forEach(function(b) {
+    var bid = b.BranchID || b.branch_id || "";
+    var st = b.CurrentState || b.current_state || "";
+  });
+}
+
+function renderFSM(branches) {
+  var states = ["INIT","PLAN","EXECUTING","VERIFYING","PASS","FAIL_RETREAT","ARCHIVE","ERROR"];
+  var stateColors = {
+    INIT:"--text-500", PLAN:"--accent", EXECUTING:"--blue",
+    VERIFYING:"--yellow", PASS:"--green", FAIL_RETREAT:"--orange",
+    ARCHIVE:"--text-400", ERROR:"--red"
+  };
+  var stateDimColors = {
+    INIT:"--text-500", PLAN:"--accent-dim", EXECUTING:"--blue-dim",
+    VERIFYING:"--yellow-dim", PASS:"--green-dim", FAIL_RETREAT:"--orange-dim",
+    ARCHIVE:"--text-400", ERROR:"--red-dim"
+  };
+
+  var counts = {};
+  states.forEach(function(s) { counts[s] = 0; });
+  branches.forEach(function(b) {
+    var s = b.CurrentState || b.current_state || "INIT";
+    counts[s] = (counts[s] || 0) + 1;
+  });
+
+  var maxCount = Math.max.apply(null, Object.keys(counts).filter(function(k){return k !== "INIT" && k !== "PLAN"}).map(function(k){return counts[k]||0}), 1);
+
+  var el = $("fsmFlow");
+  el.innerHTML = states.map(function(s, i) {
+    var c = counts[s] || 0;
+    var pct = Math.round((c / maxCount) * 100);
+    var barClass = c > 0 ? "full" : "";
+    var activeClass = c > 0 ? "active" : "";
+    return '<div class="fsm-node ' + activeClass + '" style="--sc:var(' + stateColors[s] + ');--sb:var(' + stateDimColors[s] + ')">'
+      + '<div class="fsm-node-label">' + s + '</div>'
+      + '<div class="fsm-node-count">' + c + '</div>'
+      + '<div class="fsm-node-bar ' + barClass + '" style="--sc:var(' + stateColors[s] + ')"></div>'
+      + '</div>'
+      + (i < states.length - 1 ? '<div class="fsm-arrow">→</div>' : '');
   }).join("");
 }
 
-function renderStats(branches) {
-  let t=0,a=0,p=0,f=0;
-  for (const b of branches) {
-    t++; const s = b.current_state || "";
-    if (s==="EXECUTING"||s==="VERIFYING"||s==="PLAN") a++;
-    else if (s==="ARCHIVE"||s==="PASS") p++;
-    else if (s==="ERROR") f++;
-  }
-  document.getElementById("statTotal").textContent = t;
-  document.getElementById("statActive").textContent = a;
-  document.getElementById("statPassed").textContent = p;
-  document.getElementById("statFailed").textContent = f;
-}
-
-async function fetchSkills() {
-  try {
-    const res = await fetch(API + "/api/dbas/skills");
-    const data = await res.json();
-    document.getElementById("skillCount").textContent = data.count || 0;
-    const el = document.getElementById("skillList");
-    if (data.skills && data.skills.length) {
-      el.innerHTML = data.skills.map(s => '<div class="skill-item"><span class="skill-name">' + esc(s.name) + '</span><span class="skill-desc">' + esc(s.description || "") + '</span></div>').join("");
-    } else { el.innerHTML = '<div class="empty-text">No skills loaded</div>'; }
-  } catch(e) {}
-}
-async function fetchPlugins() {
-  try {
-    const res = await fetch(API + "/api/dbas/plugins");
-    const data = await res.json();
-    document.getElementById("executorCount").textContent = (data.executors || []).length;
-    document.getElementById("verifierCount").textContent = (data.verifiers || []).length;
-    const el = document.getElementById("pluginList");
-    if (data.executors && data.executors.length) {
-      el.innerHTML = '<div class="plugin-section-label">Executors</div>' +
-        data.executors.map(e => '<div class="plugin-item">' + esc(e) + '</div>').join("") +
-        '<div class="plugin-section-label" style="margin-top:8px">Verifiers</div>' +
-        data.verifiers.map(v => '<div class="plugin-item">' + esc(v.Name || v) + '</div>').join("");
-    } else { el.innerHTML = '<div class="empty-text">No plugins loaded</div>'; }
-  } catch(e) {}
-}
-function render() {
-  const branches = state.branches || [];
-  renderFSMFlow(branches);
-  renderStats(branches);
-  const list = document.getElementById("branchList");
+function renderBranches(branches) {
+  var el = $("branchGrid");
   if (branches.length === 0) {
-    list.innerHTML = "<div class="empty-state-card"><p>No branches yet. Spawn one above or run with <code>--demo</code>.</p></div>";
-  } else {
-    list.innerHTML = branches.map(b => {
-      const logs = (b.logs || []).slice(-8);
-      const created = b.created_at ? new Date(b.created_at).toLocaleTimeString() : "";
-      const meta = b.executor_info || {};
-      const cls = (l) => { const u=l.toUpperCase(); if(u.includes("ERROR")||u.includes("FAIL")||u.includes("FSM_FATAL")) return "error"; if(u.includes("PASS")||u.includes("ARCHIVE")||u.includes("COMPLETE")) return "pass"; if(u.includes("WARN")||u.includes("FSM_ENFORCED")) return "warn"; if(u.includes("RETRY")||u.includes("ESCALATE")) return "escalate"; if(u.includes("DECIDER")||u.includes("REVIEWER")||u.includes("VERIFIER")||u.includes("DEMO")) return "info"; return ""; };
-      const esc = (s) => { if(!s) return ""; var d=document.createElement("div"); d.textContent=s; return d.innerHTML; };
-      return "<div class="branch-card"><div class="branch-top"><div><div class="branch-name">" + esc(b.branch_id) + "</div><div class="branch-id">" + created + "</div></div><div class="branch-state state-" + (b.current_state||"INIT") + "">" + (b.current_state||"?") + "</div></div><div class="branch-meta"><span>Model: " + (meta.model||"?") + "</span><span>Retries: " + (b.retries||0) + "</span></div>" + (logs.length ? "<div class="log-viewer">" + logs.map(l => "<div class="log-line " + cls(l) + "">" + esc(l) + "</div>").join("") + "</div>" : "") + "<div class="branch-actions"><button class="btn btn-sm" onclick="resetBranch('" + esc(b.branch_id) + "')">Reset</button></div></div>";
-    }).join("");
+    el.innerHTML = '<div class="empty-text" style="grid-column:1/-1">No branches yet. Use "Spawn" or "Quick Demo" above to create one.</div>';
+    return;
   }
-  // Tree
-  const roots = branches.filter(b => !b.parent_branch_id);
-  const children = {};
-  for (const b of branches) { if (b.parent_branch_id) { if (!children[b.parent_branch_id]) children[b.parent_branch_id] = []; children[b.parent_branch_id].push(b); } }
-  function printTree(bs, indent) { let out = ""; for (const b of bs) { out += indent + "\u2514\u2500 " + (b.branch_id||"?") + " [" + (b.current_state||"?") + "]\n"; if (children[b.branch_id]) out += printTree(children[b.branch_id], indent + "   "); } return out; }
-  document.getElementById("treeView").textContent = printTree(roots, "") || "(no branches)";
+
+  el.innerHTML = branches.sort(function(a,b) {
+    return (b.CreatedAt||b.created_at||"").localeCompare(a.CreatedAt||a.created_at||"");
+  }).map(function(b) {
+    var st = b.CurrentState || b.current_state || "INIT";
+    var name = b.Name || b.name || b.BranchID || b.branch_id || "unnamed";
+    var bid = b.BranchID || b.branch_id || "";
+    var model = (b.ExecutorInfo && b.ExecutorInfo.Model) || (b.executor_info && b.executor_info.model) || "—";
+    var retries = b.Retries || b.retries || 0;
+    var logs = (b.Logs || b.logs || []).slice(-3).join("\n");
+    var createdAt = b.CreatedAt || b.created_at || "";
+    var colorMap = {
+      INIT:"text-500", PLAN:"accent", EXECUTING:"blue", VERIFYING:"yellow",
+      PASS:"green", FAIL_RETREAT:"orange", ERROR:"red", ARCHIVE:"text-400"
+    };
+    var c = colorMap[st] || "text-500";
+    var timeStr = createdAt ? new Date(createdAt).toLocaleTimeString() : "";
+    return '<div class="branch-card" style="--sc:var(--' + c + ');--sb:var(--' + c + '-dim)">'
+      + '<div class="branch-top"><div><div class="branch-name">' + esc(name) + '</div><div class="branch-id">' + esc(bid) + ' · ' + timeStr + '</div></div>'
+      + '<span class="branch-state" style="background:var(--sb);color:var(--sc)">' + st + '</span></div>'
+      + '<div class="branch-info"><span>Model: ' + esc(model) + '</span><span>Retries: ' + retries + '</span></div>'
+      + (logs ? '<div class="branch-logs">' + esc(logs) + '</div>' : '')
+      + '</div>';
+  }).join("");
 }
 
-function switchTab(name, btn) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("tab" + name.charAt(0).toUpperCase() + name.slice(1)).classList.add("active");
+function renderTree() {
+  var container = $("treeContainer");
+  fetch(API + "/api/dbas/state").then(function(r) { return r.json(); }).then(function(data) {
+    var branches = data.branches || data.experiences || [];
+    if (branches.length === 0) {
+      container.innerHTML = '<div class="tree-empty">No branches to display.</div>';
+      return;
+    }
+    // Build simple SVG tree
+    var h = Math.max(200, branches.length * 70 + 40);
+    var w = 600;
+    var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<rect width="' + w + '" height="' + h + '" fill="none"/>';
+
+    // Group branches by parent
+    var roots = branches.filter(function(b) { return !b.ParentID && !b.parent_id; });
+    var children = {};
+    branches.forEach(function(b) {
+      var pid = b.ParentID || b.parent_id || "";
+      if (!pid) return;
+      if (!children[pid]) children[pid] = [];
+      children[pid].push(b);
+    });
+
+    var y = 20;
+    var xOffset = 20;
+
+    function drawBranch(b, x, y, depth) {
+      var st = b.CurrentState || b.current_state || "?";
+      var name = (b.Name || b.name || b.BranchID || b.branch_id || "?").substring(0, 30);
+      var bid = b.BranchID || b.branch_id || "";
+      var colorMap = {INIT:"#5c6a85",PLAN:"#38bdf8",EXECUTING:"#3b82f6",VERIFYING:"#eab308",PASS:"#22c55e",FAIL_RETREAT:"#f97316",ERROR:"#ef4444",ARCHIVE:"#8896b0"};
+      var color = colorMap[st] || "#5c6a85";
+      var bw = Math.min(260, name.length * 7 + 40);
+      var bx = x;
+
+      svg += '<g class="tree-node" transform="translate(' + bx + ',' + y + ')">';
+      svg += '<rect class="tree-node-bg" width="' + bw + '" height="44" stroke="' + color + '"/>';
+      svg += '<text class="tree-node-label" x="8" y="18" fill="var(--text-100)">' + esc(name) + '</text>';
+      svg += '<text class="tree-node-state" x="8" y="34" fill="' + color + '">' + st + '</text>';
+      svg += '</g>';
+
+      // Draw children
+      var kids = children[bid] || [];
+      if (kids.length > 0) {
+        var childX = bx + 30;
+        var childY = y + 60;
+        kids.forEach(function(k, i) {
+          var cy = childY + i * 50;
+          svg += '<path class="tree-edge" d="M' + (bx + bw) + ' ' + (y + 22) + ' L' + (childX + 140) + ' ' + (y + 22) + ' L' + (childX + 140) + ' ' + (cy + 22) + ' L' + (childX + 280) + ' ' + (cy + 22) + '" stroke="' + color + '" opacity="0.4"/>';
+          drawBranch(k, childX + 140, cy, depth + 1);
+        });
+      }
+      return y + 50;
+    }
+
+    roots.forEach(function(b, i) {
+      y = drawBranch(b, xOffset, y, 0);
+    });
+
+    svg += '</svg>';
+    container.innerHTML = svg;
+  }).catch(function() {
+    container.innerHTML = '<div class="tree-empty">Could not load tree data.</div>';
+  });
 }
+
+// Activity feed
+var activities = [];
+function addActivity(type, id, msg) {
+  var now = new Date();
+  var timeStr = now.toLocaleTimeString();
+  activities.unshift({time: timeStr, type: type, id: id, msg: msg});
+  if (activities.length > 50) activities.pop();
+  renderActivity();
+}
+function renderActivity() {
+  var el = $("activityFeed");
+  if (activities.length === 0) {
+    el.innerHTML = '<div class="empty-text">No activity yet.</div>';
+    return;
+  }
+  el.innerHTML = activities.map(function(a) {
+    var stateColor = {spawn:"var(--accent)", error:"var(--red)", pass:"var(--green)", fail:"var(--orange)"};
+    return '<div class="activity-item">'
+      + '<span class="activity-time">' + a.time + '</span>'
+      + '<span class="activity-msg">' + esc(a.msg) + '</span>';
+  }).join("");
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 async function spawnBranch() {
-  const name = document.getElementById("taskName").value.trim();
-  const input = document.getElementById("taskInput").value.trim();
+  var name = $("taskName").value.trim();
+  var input = $("taskInput").value.trim();
   if (!name) { alert("Task name is required"); return; }
   try {
-    const res = await fetch(API + "/api/dbas/spawn", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ taskName: name, input: input || "Execute the task." }) });
-    if (!res.ok) throw new Error(await res.text() || "HTTP " + res.status);
-    document.getElementById("taskName").value = "";
-    document.getElementById("taskInput").value = "";
-    fetchState();
-  } catch (e) { alert("Spawn failed: " + e.message); }
+    var r = await fetch(API + "/api/dbas/spawn", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({taskName: name, input: input})
+    });
+    var d = await r.json();
+    addActivity("spawn", d.branch_id, "Spawned: " + name);
+    if (d.branch_id) refreshNow();
+  } catch(e) {
+    addActivity("error", "", "Spawn failed: " + e.message);
+  }
 }
 
 async function spawnDemo() {
   try {
-    const res = await fetch(API + "/api/dbas/demo", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ taskName: "demo" }) });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    fetchState();
-  } catch (e) { alert("Demo failed: " + e.message); }
+    var r = await fetch(API + "/api/dbas/demo", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({taskName: "demo-" + Date.now()})
+    });
+    var d = await r.json();
+    addActivity("spawn", d.branch_id, "Demo branch spawned");
+    if (d.branch_id) refreshNow();
+  } catch(e) {
+    addActivity("error", "", "Demo failed: " + e.message);
+  }
 }
 
-async function resetBranch(id) {
-  if (!confirm("Reset branch " + id + "?")) return;
-  try {
-    const res = await fetch(API + "/api/dbas/reset", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ branchId: id }) });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    fetchState();
-  } catch (e) { alert("Reset failed: " + e.message); }
-}
-
-function refreshNow() { fetchState(); }
-
-document.addEventListener("DOMContentLoaded", () => { fetchState(); pollTimer = setInterval(fetchState, 2000); });
+// Initial load + polling
+refreshNow();
+setInterval(refreshNow, POLL_INTERVAL);
 </script>
 </body>
 </html>

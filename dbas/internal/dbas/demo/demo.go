@@ -1,6 +1,12 @@
 ﻿// Package demo provides an offline demo mode for DBAS.
 // It uses mock providers and simulated executors to demonstrate
 // the full FSM governance lifecycle without requiring any API keys.
+//
+// When --demo is passed, DBAS starts with:
+//   - 5 demo branches (happy path, retry, error, parallel, skills)
+//   - 13 domain skills loaded and visible in the dashboard
+//   - 3 built-in extensions registered
+//   - A self-contained offline experience — no Docker, no API keys
 package demo
 
 import (
@@ -22,34 +28,96 @@ import (
 	"reasonix/dbas/internal/dbas/skill"
 )
 
-// RunDemo spawns 3 demo branches that walk through the full DBAS lifecycle:
-//   Branch A (Happy Path):  INIT 鈫?PLAN 鈫?EXECUTING 鈫?VERIFYING 鈫?PASS 鈫?ARCHIVE
-//   Branch B (Retry Path):  ... 鈫?FAIL_RETREAT 鈫?EXECUTING 鈫?... 鈫?ARCHIVE
-//   Branch C (Error Path):  ... 鈫?ERROR (FSM enforcement)
-//
-// Each branch uses mock providers (no API key required) and demonstrates
-// the Decider 鈫?Reviewer 鈫?Executor 鈫?Verifier 鈫?Archive governance flow.
+// banner is printed at demo startup.
+const banner = `
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   ██████╗ ██████╗  █████╗ ███████╗                          ║
+║   ██╔══██╗██╔══██╗██╔══██╗██╔════╝                          ║
+║   ██║  ██║██████╔╝███████║███████╗                          ║
+║   ██║  ██║██╔══██╗██╔══██║╚════██║                          ║
+║   ██████╔╝██████╔╝██║  ██║███████║                          ║
+║   ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝                          ║
+║                                                              ║
+║   Disciplined Branching Agent System                         ║
+║   Governance-first control plane for AI coding agents        ║
+║                                                              ║
+║   Version: 0.1.0-alpha                                       ║
+║   Mode:    OFFLINE DEMO (no API keys needed)                 ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+`
+
+// RunDemo spawns 5 demo branches that walk through the full DBAS lifecycle.
+// The branches show different governance scenarios in real-time.
 func RunDemo(engine *branch.BranchEngine, store *persistence.BranchStore, dashboardPort int) {
 
-	// Display extensibility system info
+	fmt.Print(banner)
+	fmt.Printf("  Dashboard:  http://localhost:%d\n", dashboardPort)
+	fmt.Printf("  API:        http://localhost:%d/api/dbas/state\n", dashboardPort)
+	fmt.Printf("  Skills:     http://localhost:%d/api/dbas/skills\n", dashboardPort)
+	fmt.Printf("  Plugins:    http://localhost:%d/api/dbas/plugins\n", dashboardPort)
+	fmt.Printf("  Extensions: http://localhost:%d/api/dbas/extensions\n\n", dashboardPort)
+
+	// Show what's available
 	showSkills()
 	showPlugins()
 
 	baseDir, _ := os.Getwd()
 
+	fmt.Println()
 	slog.Info("=== DBAS OFFLINE DEMO ===",
 		"dashboard", fmt.Sprintf("http://localhost:%d", dashboardPort))
 
-	// Happy Path
+	fmt.Println()
+	fmt.Println("  Spawning 5 demo branches...")
+	fmt.Println()
+
+	// Branch 1: Happy Path — smooth execution
 	go runHappyPath(engine, store, baseDir)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
-	// Retry Path
+	// Branch 2: Retry Path — fails twice, then succeeds with escalation
 	go runRetryPath(engine, store, baseDir)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 
-	// Error Path
+	// Branch 3: Error Path — FSM enforcement catches illegal transition
 	go runErrorPath(engine, store, baseDir)
+	time.Sleep(300 * time.Millisecond)
+
+	// Branch 4: Parallel task — demonstrates multibranch scheduling
+	go runParallelTask(engine, store, baseDir)
+	time.Sleep(300 * time.Millisecond)
+
+	// Branch 5: Skill-guided task — uses frontend-react skills
+	go runSkillTask(engine, store, baseDir)
+}
+
+func showSkills() {
+	loader := skill.NewLoader("./skills", "./dbas/skills")
+	skills, err := loader.LoadAll()
+	if err != nil {
+		slog.Warn("skill loader error", "err", err)
+		return
+	}
+	slog.Info("DEMO: Skills loaded", "count", len(skills))
+	for _, sk := range skills {
+		slog.Debug("DEMO:   -> " + sk.Name, "version", sk.Version, "desc", sk.Description)
+	}
+}
+
+func showPlugins() {
+	r := plugin.Global()
+	executors := r.ListExecutors()
+	verifiers := r.ListVerifiers()
+	slog.Info("DEMO: Plugin registry", "executors", len(executors), "verifiers", len(verifiers))
+	for _, e := range executors {
+		slog.Info("DEMO:   executor: " + e)
+	}
+	for _, v := range verifiers {
+		slog.Info("DEMO:   verifier: " + v.Name, "cmd", v.Command)
+	}
 }
 
 func mockProvider(name string, responses []string) provider.Provider {
@@ -85,7 +153,6 @@ type mockRunner struct {
 func (m *mockRunner) Run(ctx context.Context, input string) error {
 	m.callCount++
 
-	// Create a workspace directory and a simulated output file
 	if m.workdir != "" {
 		os.MkdirAll(m.workdir, 0755)
 		outputFile := filepath.Join(m.workdir, "output.txt")
@@ -123,14 +190,13 @@ func runHappyPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 	mockExec := &mockRunner{workdir: workDir}
 	verifierTeam := verifier.NewVerifier()
 
-	// Create the report file so verifier doesn`t fail
 	reportDir := filepath.Dir(b.OutputPaths.ResultReport)
 	os.MkdirAll(reportDir, 0755)
 	os.WriteFile(b.OutputPaths.ResultReport, []byte(`{"status":"success"}`), 0644)
 
 	coord := brain.NewDeciderCoordinator(decider, reviewer, mockExec, verifierTeam, nil, store, b)
 
-	slog.Info("DEMO: Happy Path starting")
+	slog.Info("DEMO: [1/5] Happy Path starting — smooth execution flow")
 	b.Logs = append(b.Logs, "[DEMO] Happy Path: task accepted, beginning workflow...")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
@@ -140,7 +206,7 @@ func runHappyPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 		slog.Warn("DEMO: Happy Path encountered expected minor issue", "err", err)
 	}
 
-	slog.Info("DEMO: Happy Path complete", "final_state", b.CurrentState)
+	slog.Info("DEMO: [1/5] Happy Path complete", "final_state", b.CurrentState)
 	b.Logs = append(b.Logs, "[DEMO] Happy Path complete")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
@@ -164,7 +230,6 @@ func runRetryPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 	workDir := filepath.Join(baseDir, "dbas-data", "branches", b.BranchID, "workspace")
 	b.OutputPaths.WorkspaceDir = workDir
 
-	// Executor fails TWICE before succeeding (demonstrates retry loop)
 	mockExec := &mockRunner{failCount: 2, workdir: workDir}
 	verifierTeam := verifier.NewVerifier()
 
@@ -174,7 +239,7 @@ func runRetryPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 
 	coord := brain.NewDeciderCoordinator(decider, reviewer, mockExec, verifierTeam, nil, store, b)
 
-	slog.Info("DEMO: Retry Path starting (will fail twice before succeeding)")
+	slog.Info("DEMO: [2/5] Retry Path starting — will fail twice before succeeding")
 	b.Logs = append(b.Logs, "[DEMO] Retry Path: starting task with known complexity...")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
@@ -184,7 +249,7 @@ func runRetryPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 		slog.Warn("DEMO: Retry Path encountered expected issue", "err", err)
 	}
 
-	slog.Info("DEMO: Retry Path complete", "final_state", b.CurrentState, "calls", mockExec.callCount)
+	slog.Info("DEMO: [2/5] Retry Path complete", "final_state", b.CurrentState, "calls", mockExec.callCount)
 	b.Logs = append(b.Logs, fmt.Sprintf("[DEMO] Retry Path complete after %d attempts", mockExec.callCount))
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
@@ -199,7 +264,6 @@ func runErrorPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
 
-	// Walk through states normally, then attempt an illegal transition
 	time.Sleep(400 * time.Millisecond)
 	b.Transition(fsm.StatePLAN, "Decider: proposed plan with invalid target")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
@@ -210,13 +274,13 @@ func runErrorPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
 
-	// Illegal transition: EXECUTING 鈫?ARCHIVE (skip VERIFYING)
 	time.Sleep(700 * time.Millisecond)
 	b.Logs = append(b.Logs, "[DECIDER] Attempting to skip VERIFYING phase")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
 
-	err := b.Transition(fsm.StateARCHIVE, "Attempted illegal transition: EXECUTING 鈫?ARCHIVE")
+	slog.Info("DEMO: [3/5] Error Path — attempting illegal EXECUTING → ARCHIVE transition")
+	err := b.Transition(fsm.StateARCHIVE, "Attempted illegal transition: EXECUTING → ARCHIVE")
 	if err != nil {
 		b.Logs = append(b.Logs, fmt.Sprintf("[FSM_ENFORCED] %v", err))
 		store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
@@ -224,36 +288,123 @@ func runErrorPath(engine *branch.BranchEngine, store *persistence.BranchStore, b
 	}
 
 	time.Sleep(500 * time.Millisecond)
-	slog.Info("DEMO: Error Path complete - FSM governance prevented illegal transition",
+	slog.Info("DEMO: [3/5] Error Path complete — FSM governance prevented illegal transition",
 		"final_state", b.CurrentState)
-	b.Logs = append(b.Logs, "[DEMO] Error Path complete - FSM governance enforced")
+	b.Logs = append(b.Logs, "[DEMO] Error Path complete — FSM governance enforced")
 	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
 	store.SaveBranchMeta(b)
 }
 
+func runParallelTask(engine *branch.BranchEngine, store *persistence.BranchStore, baseDir string) {
+	slot := experienceslot.DefaultSlot()
+	b := branch.NewBranch("demo-parallel", nil, "demo-root-hash", "demo-branch-hash-parallel", slot)
+	store.InitBranch(b)
 
-func showSkills() {
-	loader := skill.NewLoader("./skills", "./dbas/skills")
-	skills, err := loader.LoadAll()
-	if err != nil {
-		slog.Warn("skill loader error", "err", err)
-		return
-	}
-	slog.Info("DEMO: Skills loaded", "count", len(skills))
-	for _, sk := range skills {
-		slog.Info("DEMO:   -> " + sk.Name, "version", sk.Version, "desc", sk.Description)
-	}
+	workDir := filepath.Join(baseDir, "dbas-data", "branches", b.BranchID, "workspace")
+	b.OutputPaths.WorkspaceDir = workDir
+
+	_ = workDir // used below for workspace
+
+	b.Logs = append(b.Logs, "[DEMO] Parallel: simulating concurrent task execution...")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(500 * time.Millisecond)
+	b.Transition(fsm.StatePLAN, "Decider: parallel execution plan")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(700 * time.Millisecond)
+	b.Transition(fsm.StateEXECUTING, "Reviewer: approved parallel execution")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	// Run two mock sub-tasks to simulate parallelism
+	go func() {
+		subDir := filepath.Join(workDir, "subtask-a")
+		os.MkdirAll(subDir, 0755)
+		os.WriteFile(filepath.Join(subDir, "result.txt"), []byte("subtask-a: ok"), 0644)
+		b.Logs = append(b.Logs, "[PARALLEL] Subtask A completed")
+		store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	}()
+	go func() {
+		subDir := filepath.Join(workDir, "subtask-b")
+		os.MkdirAll(subDir, 0755)
+		os.WriteFile(filepath.Join(subDir, "result.txt"), []byte("subtask-b: ok"), 0644)
+		b.Logs = append(b.Logs, "[PARALLEL] Subtask B completed")
+		store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	}()
+
+	time.Sleep(800 * time.Millisecond)
+	b.Transition(fsm.StateVERIFYING, "Executor: parallel tasks complete")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	os.MkdirAll(filepath.Dir(b.OutputPaths.ResultReport), 0755)
+	os.WriteFile(b.OutputPaths.ResultReport, []byte(`{"status":"success","subtasks":["subtask-a","subtask-b"]}`), 0644)
+
+	time.Sleep(600 * time.Millisecond)
+	b.Transition(fsm.StatePASS, "Verifier: all subtasks passed")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(400 * time.Millisecond)
+	b.Transition(fsm.StateARCHIVE, "Cross-auditor: parallel execution verified")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	slog.Info("DEMO: [4/5] Parallel task complete", "final_state", b.CurrentState)
 }
 
-func showPlugins() {
-	r := plugin.Global()
-	executors := r.ListExecutors()
-	verifiers := r.ListVerifiers()
-	slog.Info("DEMO: Plugin registry", "executors", len(executors), "verifiers", len(verifiers))
-	for _, e := range executors {
-		slog.Info("DEMO:   executor: " + e)
-	}
-	for _, v := range verifiers {
-		slog.Info("DEMO:   verifier: " + v.Name, "cmd", v.Command)
-	}
+func runSkillTask(engine *branch.BranchEngine, store *persistence.BranchStore, baseDir string) {
+	slot := experienceslot.DefaultSlot()
+	b := branch.NewBranch("demo-skill-guided", nil, "demo-root-hash", "demo-branch-hash-skill", slot)
+	store.InitBranch(b)
+
+	workDir := filepath.Join(baseDir, "dbas-data", "branches", b.BranchID, "workspace")
+	b.OutputPaths.WorkspaceDir = workDir
+
+	b.Logs = append(b.Logs, "[DEMO] Skill Task: using frontend-react skill to guide React development...")
+	b.Logs = append(b.Logs, "[DEMO] Skill-loaded instructions: React hooks, TypeScript patterns, CSS modules")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(400 * time.Millisecond)
+	b.Transition(fsm.StatePLAN, "Decider: skill-guided frontend plan")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(600 * time.Millisecond)
+	b.Transition(fsm.StateEXECUTING, "Reviewer: approved frontend plan with React hooks")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(800 * time.Millisecond)
+	os.MkdirAll(workDir, 0755)
+	os.WriteFile(filepath.Join(workDir, "App.tsx"), []byte(`import React, { useState } from "react";
+
+export function App() {
+  const [count, setCount] = useState(0);
+  return <div onClick={() => setCount(c => c + 1)}>Count: {count}</div>;
+}
+`), 0644)
+
+	b.Transition(fsm.StateVERIFYING, "Executor: React component created with TypeScript")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	os.MkdirAll(filepath.Dir(b.OutputPaths.ResultReport), 0755)
+	os.WriteFile(b.OutputPaths.ResultReport, []byte(`{"status":"success","skill":"frontend-react","files":["App.tsx"]}`), 0644)
+
+	time.Sleep(600 * time.Millisecond)
+	b.Transition(fsm.StatePASS, "Verifier: component follows React hooks patterns from skill")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	time.Sleep(400 * time.Millisecond)
+	b.Transition(fsm.StateARCHIVE, "Cross-auditor: skill-guided development verified")
+	store.AppendLog(b.BranchID, b.Logs[len(b.Logs)-1])
+	store.SaveBranchMeta(b)
+
+	slog.Info("DEMO: [5/5] Skill-guided task complete", "final_state", b.CurrentState, "skill", "frontend-react")
 }

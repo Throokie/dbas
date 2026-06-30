@@ -149,6 +149,28 @@ webhook_url = ""
 # Logging
 # =============================================================================
 
+# =============================================================================
+# Feishu Bot (双向聊天)
+# =============================================================================
+# 配置后可以在飞书上与 DBAS 聊天，支持 spawn/status/skills/branches/help 命令。
+# 复用 Reasonix internal/bot/feishu 适配器（WebSocket 或 Webhook 模式）。
+#
+# 使用 WebSocket 模式（推荐）:
+#   1. 在飞书开发者后台创建自建应用，开启机器人能力
+#   2. 设置事件订阅: im.message.receive_v1
+#   3. 设置 $env:FEISHU_BOT_APP_SECRET
+#   4. mode = "websocket"
+
+[feishu_bot]
+enabled = false
+domain = "feishu"
+app_id = ""
+app_secret_env = "FEISHU_BOT_APP_SECRET"
+verification_token = ""
+mode = "webhook"
+webhook_port = 8080
+require_mention = true
+
 [logging]
 level = "info"
 format = "json"

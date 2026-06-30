@@ -3,6 +3,7 @@
 package runner
 
 import (
+	"reasonix/dbas/internal/dbas/mcpplugin"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"reasonix/dbas/internal/dbas/executor"
 	"reasonix/dbas/internal/dbas/experienceslot"
 	"reasonix/dbas/internal/dbas/feishu"
+	"reasonix/dbas/internal/dbas/feishubot"
 	"reasonix/dbas/internal/dbas/kanban"
 	"reasonix/dbas/internal/dbas/multibranch"
 	"reasonix/dbas/internal/dbas/persistence"
@@ -144,12 +146,38 @@ func Run(cfg RunConfig) int {
 		slog.Debug("skill loaded", "name", sk.Name)
 	}
 
+
+feishuBot := feishubot.New(loadedCfg.FeishuBot, engine, skillLoader, slog.Default())
+	if err := feishuBot.Start(ctx); err != nil {
+		slog.Error("feishu bot start failed", "err", err)
+		return 1
+	}
+
 	extRegistry := plugin.Global()
 	extHandler := api.NewExtHandler(skillLoader, extRegistry)
 
 	frontendDir := resolveFrontendDir()
 	server := api.NewServer(engine, store, coordFactory, scheduler, loadedCfg.Port, frontendDir)
 	extHandler.RegisterRoutes(server)
+	// Load MCP plugins from config
+	mcpLoader := mcpplugin.NewLoader()
+	for _, pc := range loadedCfg.Plugins {
+		if pc.Type == "" || pc.Type == "stdio" {
+			args := append([]string{pc.Command}, pc.Args...)
+			_, err := mcpLoader.Load(pc.Name, args)
+			if err != nil {
+				slog.Warn("MCP plugin load failed", "plugin", pc.Name, "err", err)
+				continue
+			}
+			mcpBridge := mcpplugin.NewBridge(mcpLoader)
+			if err := mcpBridge.RegisterPlugin(pc.Name, extRegistry); err != nil {
+				slog.Warn("MCP plugin register failed", "plugin", pc.Name, "err", err)
+			} else {
+				slog.Info("MCP plugin loaded", "plugin", pc.Name)
+			}
+		}
+	}
+
 
 	handler := api.ChainMiddleware(server,
 		api.RecoveryMiddleware,
@@ -164,6 +192,7 @@ func Run(cfg RunConfig) int {
 		slog.Info("shutting down DBAS")
 		cancel()
 		if kanbanDaemon != nil { kanbanDaemon.Stop() }
+		feishuBot.Stop()
 		os.Exit(0)
 	}()
 
@@ -215,6 +244,8 @@ func buildNotifier(cfg dbasconfig.Config) kanban.Notifier {
 	if cfg.Kanban.Feishu.WebhookURL == "" { return n }
 	return &multiNotifier{notifiers: []kanban.Notifier{n, feishu.NewWebhookNotifier(cfg.Kanban.Feishu.WebhookURL, "")}}
 }
+
+
 
 
 

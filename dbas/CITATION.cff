@@ -1,0 +1,19 @@
+﻿cff-version: 1.2.0
+message: "If you use DBAS in your research, please cite it as below."
+title: "DBAS: Disciplined Branching Agent System"
+authors:
+  - name: "Throokie"
+  - name: "Reasonix Contributors"
+repository-code: "https://github.com/Throokie/reasonix"
+abstract: >
+  A governance-first control plane for AI coding agents.
+  DBAS orchestrates agents with FSM-enforced lifecycle,
+  dual-brain review, and independent verification.
+keywords:
+  - "ai-agents"
+  - "governance"
+  - "agent-orchestration"
+  - "code-review"
+  - "verification"
+license: "Apache-2.0"
+type: "software"

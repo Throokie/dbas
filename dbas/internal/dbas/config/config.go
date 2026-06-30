@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"fmt"
@@ -32,6 +32,7 @@ type Config struct {
 	Kanban            KanbanConfig     `toml:"kanban"`
 	Logging           LoggingConfig    `toml:"logging"`
 	Plugins           []PluginConfig   `toml:"plugins"`
+	FeishuBot         FeishuBotConfig  `toml:"feishu_bot"`
 }
 
 type ProviderConfig struct {
@@ -77,6 +78,19 @@ type FeishuConfig struct {
 	WebhookURL   string `toml:"webhook_url"`
 }
 
+
+// FeishuBotConfig configures the bidirectional Feishu chat bot.
+type FeishuBotConfig struct {
+	Enabled           bool   `toml:"enabled"`
+	Domain            string `toml:"domain"`
+	AppID             string `toml:"app_id"`
+	AppSecretEnv      string `toml:"app_secret_env"`
+	VerificationToken string `toml:"verification_token"`
+	Mode              string `toml:"mode"`
+	WebhookPort       int    `toml:"webhook_port"`
+	RequireMention    bool   `toml:"require_mention"`
+}
+
 type LoggingConfig struct {
 	Level  string `toml:"level"`
 	Format string `toml:"format"`
@@ -109,6 +123,7 @@ func Default() Config {
 		Executor: ExecutorConfig{Type: "reasonix-native"},
 		Kanban:   KanbanConfig{Enabled: true, Notifier: "console", Feishu: FeishuConfig{AppSecretEnv: "FEISHU_BOT_APP_SECRET"}},
 		Logging:  LoggingConfig{Level: "info", Format: "json"},
+		FeishuBot: FeishuBotConfig{Domain: "feishu", AppSecretEnv: "FEISHU_BOT_APP_SECRET", Mode: "webhook", WebhookPort: 8080, RequireMention: true},
 	}
 }
 
