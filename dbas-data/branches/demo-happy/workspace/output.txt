@@ -1,2 +1,0 @@
-Demo execution #1
-Task: Write a hello world program to workspace/output.txt
