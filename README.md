@@ -5,7 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Throokie/dbas/actions/workflows/dbas-ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Throokie/dbas/dbas-ci.yml?branch=main&label=CI&logo=github" alt="CI"></a>
+  <!-- Restore the workflow badge after dbas-ci.yml has a successful run on main. -->
+  <img src="https://img.shields.io/badge/CI-not%20yet%20green-lightgrey" alt="CI pending">
   <a href="https://github.com/Throokie/dbas/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
   <a href="https://go.dev/"><img src="https://img.shields.io/badge/go-%3E%3D1.25-00ADD8?logo=go" alt="Go Version"></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform">
